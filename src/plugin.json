@@ -1,0 +1,40 @@
+{
+  "type": "panel",
+  "name": "MapTrack3D",
+  "id": "flaminggoat-map-track-3-d",
+  "info": {
+    "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
+    "author": {
+      "name": "Theo Hussey",
+      "url": ""
+    },
+    "keywords": [
+      "map",
+      "gps",
+      "globe",
+      "track",
+      "3d"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/grafana/simple-react-panel"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/grafana/simple-react-panel/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaVersion": "6.3.x",
+    "plugins": []
+  }
+}
