@@ -1,0 +1,42 @@
+{
+  "type": "panel",
+  "name": "MapTrack3D",
+  "id": "flaminggoat-map-track-3-d",
+  "info": {
+    "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
+    "author": {
+      "name": "Theo Hussey",
+      "url": ""
+    },
+    "keywords": [
+      "map",
+      "gps",
+      "globe",
+      "track",
+      "3d"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/flaminggoat/map-track-3-d"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/flaminggoat/map-track-3-d/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [
+      {"name": "Section of orbit", "path": "https://i.imgur.com/h0vTjA7.png"}
+    ],
+    "version": "1.0.0",
+    "updated": "2020-07-15"
+  },
+  "dependencies": {
+    "grafanaVersion": "6.3.x",
+    "plugins": []
+  }
+}
