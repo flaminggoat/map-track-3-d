@@ -57,41 +57,47 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
       var orbitLength = lat_points.length;
 
-      var last_llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: 0 };
+      var last_llz = { latitude: lat_points.get(0), longitude: lon_points.get(0), altitude: 0 };
       last_llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(i) : 10;
 
       for (var i = 0; i < orbitLength; i++) {
         var llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: 0 };
         llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(i) : 10;
-        console.log(llz);
 
-        const lat_delta = llz.latitude - last_llz.latitude;
-        const lon_delta = llz.longitude - last_llz.longitude;
-        if (Math.abs(lat_delta) > 1 || Math.abs(lon_delta) > 1) {
-          var k = 0;
-          if (Math.abs(lat_delta) > Math.abs(lon_delta)) {
-            k = Math.floor(Math.abs(lat_delta));
-          } else {
-            k = Math.floor(Math.abs(lon_delta));
-          }
+        const φ1 = (last_llz.latitude * Math.PI) / 180,
+          φ2 = (llz.latitude * Math.PI) / 180,
+          Δλ = ((llz.longitude - last_llz.longitude) * Math.PI) / 180;
+        const d = Math.acos(Math.sin(φ1) * Math.sin(φ2) + Math.cos(φ1) * Math.cos(φ2) * Math.cos(Δλ)) * earthRad;
+
+        if (d > 100000) {
+          const λ1 = (last_llz.longitude * Math.PI) / 180;
+          const λ2 = (llz.longitude * Math.PI) / 180;
+
+          var k = Math.floor(Math.abs(d / 100000));
           for (var j = 0; j < k; ++j) {
+            const ad = d / earthRad;
+            const f = (1 / (k + 1)) * (j + 1);
+            const a = Math.sin((1 - f) * ad) / Math.sin(ad);
+            const b = Math.sin(f * ad) / Math.sin(ad);
+            const x = a * Math.cos(φ1) * Math.cos(λ1) + b * Math.cos(φ2) * Math.cos(λ2);
+            const y = a * Math.cos(φ1) * Math.sin(λ1) + b * Math.cos(φ2) * Math.sin(λ2);
+            const z = a * Math.sin(φ1) + b * Math.sin(φ2);
+            const φi = Math.atan2(z, Math.sqrt(x * x + y * y));
+            const λi = Math.atan2(y, x);
+
             var llzinterp = {
-              latitude: last_llz.latitude + (lat_delta / (k + 1)) * (j + 1),
-              longitude: last_llz.longitude + (lon_delta / (k + 1)) * (j + 1),
+              latitude: φi / (Math.PI / 180),
+              longitude: λi / (Math.PI / 180),
               altitude: last_llz.altitude + ((llz.altitude - last_llz.altitude) / (k + 1)) * (j + 1),
             };
             console.log(llzinterp);
             llzinterp.altitude = earthRad / scale + llzinterp.altitude / scale;
-            // llzinterp.latitude = llzinterp.latitude / (Math.PI / 180);
-            // llzinterp.longitude = llzinterp.longitude / (Math.PI / 180);
             var carti = llToCart(llzinterp.latitude, llzinterp.longitude, llzinterp.altitude);
             orbit.vertices.push(new THREE.Vector3(carti.x, carti.y, carti.z));
           }
         }
         last_llz = { ...llz };
         llz.altitude = earthRad / scale + llz.altitude / scale;
-        // llz.latitude = llz.latitude / (Math.PI / 180);
-        // llz.longitude = llz.longitude / (Math.PI / 180);
         var cart = llToCart(llz.latitude, llz.longitude, llz.altitude);
         orbit.vertices.push(new THREE.Vector3(cart.x, cart.y, cart.z));
       }
