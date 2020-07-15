@@ -2,7 +2,16 @@
 
 A plugin for Grafana that visualizes GPS points on a 3D globe
 
+![](https://i.imgur.com/h0vTjA7.png)
 
-## Setup
+## Configuration
 
-3 queries should be provided for latitude longitude and altitude
+The plugin requires latitude,longitude, and optionally altitude measurements provided as floats in two/three separate fields
+formatted by Grafana as a "Time series".
+
+It can be used with MySQL/MariaDB as a data source by using 2/3 queries along the lines of:
+```
+A: SELECT "latitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
+B: SELECT "longitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
+B: SELECT "altitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
+```
