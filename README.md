@@ -15,3 +15,7 @@ A: SELECT "latitude" as value, $__time(timestamp) FROM "location" WHERE $__timeF
 B: SELECT "longitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
 B: SELECT "altitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
 ```
+
+## Attributions
+Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [Flaticon](https://www.flaticon.com/)
+Map Texture from [Planet Pixel Emporium](http://planetpixelemporium.com) Copyright (c) James Hastings-Trew

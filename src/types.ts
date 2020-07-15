@@ -1,6 +1,4 @@
-type SeriesSize = 'sm' | 'md' | 'lg';
-
-export interface SimpleOptions {
+export interface MapTrack3DOptions {
   lineWidth: number;
   showTextureCopyright: boolean;
 }

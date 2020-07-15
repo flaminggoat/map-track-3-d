@@ -1,8 +1,8 @@
 import { PanelPlugin } from '@grafana/data';
-import { SimpleOptions } from './types';
+import { MapTrack3DOptions } from './types';
 import { MapTrack3D } from './MapTrack3D';
 
-export const plugin = new PanelPlugin<SimpleOptions>(MapTrack3D).setPanelOptions(builder => {
+export const plugin = new PanelPlugin<MapTrack3DOptions>(MapTrack3D).setPanelOptions(builder => {
   return builder
     .addNumberInput({
       path: 'lineWidth',

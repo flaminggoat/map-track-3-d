@@ -22,14 +22,16 @@
     "links": [
       {
         "name": "Website",
-        "url": "https://github.com/grafana/simple-react-panel"
+        "url": "https://github.com/flaminggoat/map-track-3-d"
       },
       {
         "name": "License",
-        "url": "https://github.com/grafana/simple-react-panel/blob/master/LICENSE"
+        "url": "https://github.com/flaminggoat/map-track-3-d/blob/master/LICENSE"
       }
     ],
-    "screenshots": [],
+    "screenshots": [
+      {"name": "Section of orbit", "path": "https://i.imgur.com/h0vTjA7.png"}
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },

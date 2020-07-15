@@ -1,6 +1,6 @@
 import React from 'react';
 import { PanelProps } from '@grafana/data';
-import { SimpleOptions } from 'types';
+import { MapTrack3DOptions } from 'types';
 import { css, cx } from 'emotion';
 import { stylesFactory, useTheme } from '@grafana/ui';
 import { useRef, useEffect } from 'react';
@@ -10,7 +10,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import earthTexture from './img/earth.jpg';
 
-interface Props extends PanelProps<SimpleOptions> {}
+interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
   pathGeometry: any;
   scene: any;
@@ -139,19 +139,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     threeJsObjects.current.camera = c;
   }, []);
 
-  // const renderer = useMemo(() => {
-  //   if (canvasRef.current != null) {
-  //     const r = ne    new OrbitControls(camera, r.domElement);
-  //     var animate = function() {
-  //       requestAnimationFrame(animate);
-  //       r.render(scene, camera);
-  //     };
-  //     animate();
-  //     return r;
-  //   }
-  //   return null;
-  // }, [canvasRef.current]);
-
   useEffect(() => {
     const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement });
     new OrbitControls(threeJsObjects.current.camera, r.domElement);
@@ -166,12 +153,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       cancelAnimationFrame(threeJsObjects.current.animationRequestId);
     };
   }, []);
-
-  // React.useEffect(() => {
-  //   if (renderer !== undefined) {
-  //     renderer.render(scene, camera);
-  //   }
-  // }, [renderer, scene, camera, height]);
 
   useEffect(() => {
     threeJsObjects.current.renderer.setSize(width, height);

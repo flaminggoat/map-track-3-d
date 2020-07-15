@@ -8,12 +8,11 @@
     "dev": "grafana-toolkit plugin:dev",
     "watch": "grafana-toolkit plugin:dev --watch"
   },
-  "repository": "github:grafana/simple-react-panel",
+  "repository": "github:flaminggoat/map-track-3-d",
   "author": "Theo Hussey",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/grafana/simple-react-panel/issues",
-    "email": "plugins@grafana.com"
+    "url": "https://github.com/flaminggoat/map-track-3-d/issues"
   },
   "devDependencies": {
     "@grafana/data": "7.0.1",
