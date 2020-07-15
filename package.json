@@ -1,6 +1,6 @@
 {
-  "name": "th-map-track-3-d",
-  "version": "1.0.0",
+  "name": "flaminggoat-map-track-3-d",
+  "version": "0.1.1",
   "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
