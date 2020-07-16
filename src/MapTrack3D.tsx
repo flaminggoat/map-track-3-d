@@ -46,12 +46,18 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const earthRad = 6731000;
   const scale = 100000;
 
+  var render = function() {
+    if (threeJsObjects.current.renderer != null) {
+      threeJsObjects.current.renderer.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
+    }
+  };
+
   useEffect(() => {
     const c = new THREE.Scene();
-    const texture = new THREE.TextureLoader().load(earthTexture);
-    var earthGeom = new THREE.SphereGeometry(earthRad / scale, 64, 64);
-    var material = new THREE.MeshBasicMaterial({ map: texture });
-    var earth = new THREE.Mesh(earthGeom, material);
+    const texture = new THREE.TextureLoader().load(earthTexture, render);
+    const earthGeom = new THREE.SphereGeometry(earthRad / scale, 64, 64);
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const earth = new THREE.Mesh(earthGeom, material);
     c.add(earth);
     threeJsObjects.current.scene = c;
   }, []);
@@ -103,7 +109,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
             longitude: λi / (Math.PI / 180),
             altitude: last_llz.altitude + ((llz.altitude - last_llz.altitude) / (k + 1)) * (j + 1),
           };
-          console.log(llzinterp);
           llzinterp.altitude = earthRad / scale + llzinterp.altitude / scale;
           var carti = llToCart(llzinterp.latitude, llzinterp.longitude, llzinterp.altitude);
           orbit.vertices.push(new THREE.Vector3(carti.x, carti.y, carti.z));
@@ -141,17 +146,10 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
   useEffect(() => {
     const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement });
-    new OrbitControls(threeJsObjects.current.camera, r.domElement);
-    var animate = function() {
-      threeJsObjects.current.animationRequestId = requestAnimationFrame(animate);
-      r.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
-    };
-    animate();
+    const controls = new OrbitControls(threeJsObjects.current.camera, r.domElement);
     threeJsObjects.current.renderer = r;
-
-    return () => {
-      cancelAnimationFrame(threeJsObjects.current.animationRequestId);
-    };
+    controls.addEventListener('change', render);
+    render();
   }, []);
 
   useEffect(() => {
@@ -159,6 +157,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     const c = threeJsObjects.current.renderer.domElement;
     threeJsObjects.current.camera.aspect = c.clientWidth / c.clientHeight;
     threeJsObjects.current.camera.updateProjectionMatrix();
+    render();
   }, [width, height]);
 
   return (
