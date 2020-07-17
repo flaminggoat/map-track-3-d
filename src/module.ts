@@ -10,9 +10,9 @@ export const plugin = new PanelPlugin<MapTrack3DOptions>(MapTrack3D).setPanelOpt
       description: 'Width of the track line',
       defaultValue: 3,
     })
-    .addBooleanSwitch({
-      path: 'showTextureCopyright',
-      name: 'Show Texture copyright notice',
-      defaultValue: true,
+    .addTextInput({
+      path: 'customTextureURL',
+      name: 'Custom Texture URL',
+      defaultValue: '',
     });
 });
