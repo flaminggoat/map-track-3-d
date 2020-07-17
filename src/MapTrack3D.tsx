@@ -145,7 +145,8 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   }, []);
 
   useEffect(() => {
-    const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement });
+    const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement, alpha: true });
+    r.setClearColor( 0x000000, 0 )
     const controls = new OrbitControls(threeJsObjects.current.camera, r.domElement);
     threeJsObjects.current.renderer = r;
     controls.addEventListener('change', render);
