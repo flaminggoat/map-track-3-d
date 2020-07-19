@@ -2,7 +2,7 @@ import React from 'react';
 import { PanelProps } from '@grafana/data';
 import { MapTrack3DOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, useTheme } from '@grafana/ui';
+import { stylesFactory } from '@grafana/ui';
 import { useRef, useEffect } from 'react';
 
 import * as THREE from 'three';
@@ -40,7 +40,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     renderer: null,
     animationRequestId: null,
   });
-  const theme = useTheme();
+  // const theme = useTheme();
   const styles = getStyles();
 
   const earthRad = 6731000;
@@ -146,7 +146,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
   useEffect(() => {
     const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement, alpha: true });
-    r.setClearColor( 0x000000, 0 )
+    r.setClearColor(0x000000, 0);
     const controls = new OrbitControls(threeJsObjects.current.camera, r.domElement);
     threeJsObjects.current.renderer = r;
     controls.addEventListener('change', render);
