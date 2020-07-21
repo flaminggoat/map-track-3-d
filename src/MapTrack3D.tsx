@@ -2,7 +2,7 @@ import React from 'react';
 import { PanelProps } from '@grafana/data';
 import { MapTrack3DOptions } from 'types';
 import { css, cx } from 'emotion';
-import { stylesFactory, useTheme } from '@grafana/ui';
+import { stylesFactory } from '@grafana/ui';
 import { useRef, useEffect } from 'react';
 import { SystemJS } from '@grafana/runtime';
 
@@ -57,7 +57,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     earthMesh: null,
   });
 
-  const theme = useTheme();
+  // const theme = useTheme();
   const styles = getStyles();
 
   const earthRad = 6731000;
