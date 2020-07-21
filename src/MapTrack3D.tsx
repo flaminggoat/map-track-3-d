@@ -4,20 +4,24 @@ import { MapTrack3DOptions } from 'types';
 import { css, cx } from 'emotion';
 import { stylesFactory } from '@grafana/ui';
 import { useRef, useEffect } from 'react';
+import { SystemJS } from '@grafana/runtime';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import earthTexture from './img/earth.jpg';
+import earthBumpMap from './img/earthBumpMap.jpg';
 
 interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
   pathGeometry: any;
-  scene: any;
+  scene: THREE.Scene | null;
   pathLine: any;
   camera: any;
   renderer: any;
   animationRequestId: any;
+  earthMaterial: THREE.MeshBasicMaterial | THREE.MeshPhysicalMaterial;
+  earthMesh: THREE.Mesh | null;
 }
 
 function llToCart(lat: number, long: number, alt: number) {
@@ -31,6 +35,14 @@ function llToCart(lat: number, long: number, alt: number) {
 }
 
 export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) => {
+  const render = function() {
+    if (threeJsObjects.current.renderer != null) {
+      threeJsObjects.current.renderer.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
+    }
+  };
+
+  const texturePath = options.customTextureURL ? options.customTextureURL : earthTexture;
+
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const threeJsObjects = useRef<ThreeJSObjectsI>({
     pathGeometry: null,
@@ -39,26 +51,35 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     camera: null,
     renderer: null,
     animationRequestId: null,
+    earthMaterial: new THREE.MeshPhysicalMaterial({
+      bumpMap: new THREE.TextureLoader().load(earthBumpMap, render),
+    }),
+    earthMesh: null,
   });
+
   // const theme = useTheme();
   const styles = getStyles();
 
   const earthRad = 6731000;
   const scale = 100000;
 
-  var render = function() {
-    if (threeJsObjects.current.renderer != null) {
-      threeJsObjects.current.renderer.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
-    }
+  SystemJS.load('app/core/app_events').then((appEvents: any) => {
+    appEvents.on('graph-hover', (e: any) => console.log(e));
+  });
+
+  const loadNewTexture = () => {
+    console.log('loading new texture');
+    const texture = new THREE.TextureLoader().load(texturePath, render);
+    threeJsObjects.current.earthMaterial.map = texture;
   };
 
   useEffect(() => {
     const c = new THREE.Scene();
-    const texture = new THREE.TextureLoader().load(earthTexture, render);
     const earthGeom = new THREE.SphereGeometry(earthRad / scale, 64, 64);
-    const material = new THREE.MeshBasicMaterial({ map: texture });
-    const earth = new THREE.Mesh(earthGeom, material);
-    c.add(earth);
+    const globe = new THREE.Mesh(earthGeom, threeJsObjects.current.earthMaterial);
+    c.add(globe);
+
+    threeJsObjects.current.earthMesh = globe;
     threeJsObjects.current.scene = c;
   }, []);
 
@@ -126,7 +147,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       threeJsObjects.current.pathGeometry,
       new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
     );
-    threeJsObjects.current.scene.add(l);
+    threeJsObjects.current.scene?.add(l);
     threeJsObjects.current.pathLine = l;
   }, []);
 
@@ -135,15 +156,27 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   }, [data]);
 
   useEffect(() => {
-    threeJsObjects.current.pathLine.material.linewidth = options.lineWidth;
-  }, [options]);
+    loadNewTexture();
+  }, [options.customTextureURL]);
 
+  useEffect(() => {
+    threeJsObjects.current.pathLine.material.linewidth = options.lineWidth;
+  }, [options.lineWidth]);
+
+  // Camera configuration
   useEffect(() => {
     const c = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     c.position.set(0, 20, (earthRad * 2) / scale);
+
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set((earthRad / scale) * 10, 0, (earthRad / scale) * 10);
+    c.add(light);
+
     threeJsObjects.current.camera = c;
+    threeJsObjects.current.scene?.add(c);
   }, []);
 
+  // Renderer Configuration
   useEffect(() => {
     const r = new THREE.WebGLRenderer({ canvas: canvasRef.current as HTMLCanvasElement, alpha: true });
     r.setClearColor(0x000000, 0);
@@ -153,6 +186,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     render();
   }, []);
 
+  // Window resize handling
   useEffect(() => {
     threeJsObjects.current.renderer.setSize(width, height);
     const c = threeJsObjects.current.renderer.domElement;
@@ -172,10 +206,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       )}
     >
       <canvas ref={canvasRef} width={width} height={height} />
-
-      <div className={styles.textBox} hidden={!options.showTextureCopyright}>
-        Map Texture Copyright (c) James Hastings-Trew
-      </div>
     </div>
   );
 };
