@@ -14,7 +14,7 @@ import earthBumpMap from './img/earthBumpMap.jpg';
 
 interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
-  pathGeometry: any;
+  pathGeometry: THREE.Geometry | null;
   scene: THREE.Scene | null;
   pathLine: any;
   camera: any;
@@ -22,6 +22,8 @@ interface ThreeJSObjectsI {
   animationRequestId: any;
   earthMaterial: THREE.MeshBasicMaterial | THREE.MeshPhysicalMaterial;
   earthMesh: THREE.Mesh | null;
+  markerMesh: THREE.Mesh | null;
+  cartPath: [{ t: number; x: number; y: number; z: number }] | null;
 }
 
 function llToCart(lat: number, long: number, alt: number) {
@@ -55,6 +57,8 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       bumpMap: new THREE.TextureLoader().load(earthBumpMap, render),
     }),
     earthMesh: null,
+    markerMesh: null,
+    cartPath: null,
   });
 
   // const theme = useTheme();
@@ -64,7 +68,18 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const scale = 100000;
 
   SystemJS.load('app/core/app_events').then((appEvents: any) => {
-    appEvents.on('graph-hover', (e: any) => console.log(e));
+    appEvents.on('graph-hover', (e: any) => {
+      threeJsObjects.current.cartPath?.find(point => {
+        if (point.t >= e.pos.x) {
+          threeJsObjects.current.markerMesh.position.x = point.x;
+          threeJsObjects.current.markerMesh.position.y = point.y;
+          threeJsObjects.current.markerMesh.position.z = point.z;
+          render();
+          return true;
+        }
+        return false;
+      });
+    });
   });
 
   const loadNewTexture = () => {
@@ -77,16 +92,20 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     const c = new THREE.Scene();
     const earthGeom = new THREE.SphereGeometry(earthRad / scale, 64, 64);
     const globe = new THREE.Mesh(earthGeom, threeJsObjects.current.earthMaterial);
+    const marker = new THREE.Mesh(new THREE.SphereGeometry(earthRad / scale / 20, 10, 10));
+    c.add(marker);
     c.add(globe);
 
     threeJsObjects.current.earthMesh = globe;
     threeJsObjects.current.scene = c;
+    threeJsObjects.current.markerMesh = marker;
   }, []);
 
   useEffect(() => {
     //Add orbit path
     var orbit = new THREE.Geometry();
     threeJsObjects.current.pathGeometry = orbit;
+    threeJsObjects.current.cartPath = [];
 
     if (data.series.length < 2) {
       return;
@@ -94,6 +113,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
     const lat_points = data.series[0].fields[1].values;
     const lon_points = data.series[1].fields[1].values;
+    const timestamps = data.series[0].fields[0].values;
 
     var orbitLength = lat_points.length;
 
@@ -102,7 +122,10 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
     for (var i = 0; i < orbitLength; i++) {
       var llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: 0 };
-      llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(i) : 10;
+      llz.altitude =
+        data.series.length >= 3 && data.series[2].fields[1].values.length > i
+          ? data.series[2].fields[1].values.get(i)
+          : 10;
 
       const φ1 = (last_llz.latitude * Math.PI) / 180,
         φ2 = (llz.latitude * Math.PI) / 180,
@@ -138,6 +161,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       last_llz = { ...llz };
       llz.altitude = earthRad / scale + llz.altitude / scale;
       var cart = llToCart(llz.latitude, llz.longitude, llz.altitude);
+      threeJsObjects.current.cartPath.push({ t: timestamps.get(i), ...cart });
       orbit.vertices.push(new THREE.Vector3(cart.x, cart.y, cart.z));
     }
   }, [data]);
