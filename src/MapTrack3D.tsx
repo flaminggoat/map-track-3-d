@@ -65,6 +65,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const styles = getStyles();
 
   const earthRad = 6731000;
+  const markerRad = 200000;
   const scale = 100000;
 
   SystemJS.load('app/core/app_events').then((appEvents: any) => {
@@ -92,7 +93,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     const c = new THREE.Scene();
     const earthGeom = new THREE.SphereGeometry(earthRad / scale, 64, 64);
     const globe = new THREE.Mesh(earthGeom, threeJsObjects.current.earthMaterial);
-    const marker = new THREE.Mesh(new THREE.SphereGeometry(earthRad / scale / 20, 10, 10));
+    const marker = new THREE.Mesh(new THREE.SphereGeometry(markerRad / scale, 10, 10));
     c.add(marker);
     c.add(globe);
 
