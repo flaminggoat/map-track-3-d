@@ -2,7 +2,7 @@
 
 A plugin for Grafana that visualizes GPS points on a 3D globe
 
-![](https://i.imgur.com/h0vTjA7.png)
+![](https://imgur.com/VyOYKfe.png)
 
 ## Configuration
 
