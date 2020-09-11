@@ -1,12 +1,12 @@
 {
   "type": "panel",
   "name": "MapTrack3D",
-  "id": "flaminggoat-map_track_3d-panel",
+  "id": "flaminggoat-maptrack3d-panel",
   "info": {
     "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
     "author": {
       "name": "Theo Hussey",
-      "url": ""
+      "url": "https://github.com/flaminggoat"
     },
     "keywords": [
       "map",
@@ -36,7 +36,7 @@
     "updated": "2020-09-11"
   },
   "dependencies": {
-    "grafanaDependency": "6.3.x",
+    "grafanaDependency": ">=7.0.0",
     "plugins": []
   }
 }
