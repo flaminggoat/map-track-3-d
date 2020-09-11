@@ -1,7 +1,7 @@
 {
   "type": "panel",
   "name": "MapTrack3D",
-  "id": "flaminggoat-map-track-3-d",
+  "id": "flaminggoat-map_track_3d-panel",
   "info": {
     "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
     "author": {
@@ -30,13 +30,13 @@
       }
     ],
     "screenshots": [
-      {"name": "Section of orbit", "path": "https://i.imgur.com/h0vTjA7.png"}
+      {"name": "Section of orbit", "path": "img/screenshot.png"}
     ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaVersion": "6.3.x",
+    "grafanaDependency": "6.3.x",
     "plugins": []
   }
 }
