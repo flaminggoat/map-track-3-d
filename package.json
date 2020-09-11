@@ -1,5 +1,5 @@
 {
-  "name": "flaminggoat-map_track_3d-panel",
+  "name": "flaminggoat-maptrack3d-panel",
   "version": "0.1.3",
   "description": "A plugin for Grafana that visualizes GPS points on a 3D globe",
   "scripts": {
