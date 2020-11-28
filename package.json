@@ -15,9 +15,10 @@
     "url": "https://github.com/flaminggoat/map-track-3-d/issues"
   },
   "devDependencies": {
-    "@grafana/data": "7.0.1",
-    "@grafana/toolkit": "7.0.1",
-    "@grafana/ui": "7.0.1",
+    "@grafana/data": "7.3.3",
+    "@grafana/runtime": "7.3.3",
+    "@grafana/toolkit": "7.3.3",
+    "@grafana/ui": "7.3.3",
     "emotion": "10.0.27"
   },
   "engines": {
