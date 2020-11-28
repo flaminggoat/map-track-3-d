@@ -1,16 +1,21 @@
 import React from 'react';
+
 import { PanelProps } from '@grafana/data';
-import { MapTrack3DOptions } from 'types';
-import { css, cx } from 'emotion';
 import { stylesFactory } from '@grafana/ui';
-import { useRef, useEffect } from 'react';
 import { SystemJS } from '@grafana/runtime';
+
+import { css, cx } from 'emotion';
+import { useRef, useEffect, useCallback } from 'react';
+
+import { MapTrack3DOptions } from 'types';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import earthTexture from './img/earth.jpg';
 import earthBumpMap from './img/earthBumpMap.jpg';
+
+type TimeVec3 = { t: number; x: number; y: number; z: number };
 
 interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
@@ -23,7 +28,7 @@ interface ThreeJSObjectsI {
   earthMaterial: THREE.MeshBasicMaterial | THREE.MeshPhysicalMaterial;
   earthMesh: THREE.Mesh | null;
   markerMesh: THREE.Mesh | null;
-  cartPath: [{ t: number; x: number; y: number; z: number }] | null;
+  cartPath: TimeVec3[];
 }
 
 function llToCart(lat: number, long: number, alt: number) {
@@ -58,7 +63,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     }),
     earthMesh: null,
     markerMesh: null,
-    cartPath: null,
+    cartPath: [],
   });
 
   // const theme = useTheme();
@@ -71,7 +76,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   SystemJS.load('app/core/app_events').then((appEvents: any) => {
     appEvents.on('graph-hover', (e: any) => {
       threeJsObjects.current.cartPath?.find(point => {
-        if (point.t >= e.pos.x) {
+        if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
           threeJsObjects.current.markerMesh.position.x = point.x;
           threeJsObjects.current.markerMesh.position.y = point.y;
           threeJsObjects.current.markerMesh.position.z = point.z;
@@ -83,11 +88,11 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     });
   });
 
-  const loadNewTexture = () => {
+  const loadNewTexture = useCallback(() => {
     console.log('loading new texture');
     const texture = new THREE.TextureLoader().load(texturePath, render);
     threeJsObjects.current.earthMaterial.map = texture;
-  };
+  }, [texturePath]);
 
   useEffect(() => {
     const c = new THREE.Scene();
@@ -162,19 +167,21 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
       last_llz = { ...llz };
       llz.altitude = earthRad / scale + llz.altitude / scale;
       var cart = llToCart(llz.latitude, llz.longitude, llz.altitude);
-      threeJsObjects.current.cartPath.push({ t: timestamps.get(i), ...cart });
+      threeJsObjects.current.cartPath.push({ t: timestamps.get(i) as number, ...cart });
       orbit.vertices.push(new THREE.Vector3(cart.x, cart.y, cart.z));
     }
   }, [data]);
 
   useEffect(() => {
-    const l = new THREE.Line(
-      threeJsObjects.current.pathGeometry,
-      new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
-    );
-    threeJsObjects.current.scene?.add(l);
-    threeJsObjects.current.pathLine = l;
-  }, []);
+    if (threeJsObjects.current.pathGeometry !== null) {
+      const l = new THREE.Line(
+        threeJsObjects.current.pathGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
+      );
+      threeJsObjects.current.scene?.add(l);
+      threeJsObjects.current.pathLine = l;
+    }
+  }, [options.lineWidth]);
 
   useEffect(() => {
     threeJsObjects.current.pathLine.geometry = threeJsObjects.current.pathGeometry;
@@ -182,15 +189,16 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
 
   useEffect(() => {
     loadNewTexture();
-  }, [options.customTextureURL]);
+  }, [options.customTextureURL, loadNewTexture]);
 
   useEffect(() => {
     threeJsObjects.current.pathLine.material.linewidth = options.lineWidth;
-  }, [options.lineWidth]);
+  }, [options.lineWidth, options]);
 
   // Camera configuration
   useEffect(() => {
-    const c = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    // Aspect is not import, as it is configured in a separate hook
+    const c = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     c.position.set(0, 20, (earthRad * 2) / scale);
 
     const light = new THREE.PointLight(0xffffff, 1);
