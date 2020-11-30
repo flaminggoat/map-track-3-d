@@ -21,7 +21,6 @@ interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
   pathGeometry: THREE.Geometry | null;
   scene: THREE.Scene | null;
-  pathLine: any;
   camera: any;
   renderer: any;
   animationRequestId: any;
@@ -54,7 +53,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const threeJsObjects = useRef<ThreeJSObjectsI>({
     pathGeometry: null,
     scene: null,
-    pathLine: null,
     camera: null,
     renderer: null,
     animationRequestId: null,
@@ -72,11 +70,33 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const earthRad = 6731000;
   const markerRad = 200000;
   const scale = 100000;
+  const defaultPathAltitude = 10;
 
+  // Updates the position of the line marker that points to the center of the globe
+  const updateLineMarker = (scene: THREE.Scene, point: TimeVec3) => {
+    const lineMarker = scene.getObjectByName('lineMarker');
+    if (lineMarker !== undefined) {
+      scene.remove(lineMarker);
+    }
+    const l = new THREE.Geometry();
+    l.vertices.push(new THREE.Vector3(0, 0, 0));
+    l.vertices.push(new THREE.Vector3(point.x, point.y, point.z));
+    const newLineMarker = new THREE.Line(
+      l,
+      new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: options.lineWidth })
+    );
+    newLineMarker.name = 'lineMarker';
+    scene.add(newLineMarker);
+  };
+
+  // Show marker on the panel when user hovers over other graphs
   SystemJS.load('app/core/app_events').then((appEvents: any) => {
     appEvents.on('graph-hover', (e: any) => {
       threeJsObjects.current.cartPath?.find(point => {
         if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
+          if (threeJsObjects.current.scene) {
+            updateLineMarker(threeJsObjects.current.scene, point);
+          }
           threeJsObjects.current.markerMesh.position.x = point.x;
           threeJsObjects.current.markerMesh.position.y = point.y;
           threeJsObjects.current.markerMesh.position.z = point.z;
@@ -89,7 +109,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   });
 
   const loadNewTexture = useCallback(() => {
-    console.log('loading new texture');
     const texture = new THREE.TextureLoader().load(texturePath, render);
     threeJsObjects.current.earthMaterial.map = texture;
   }, [texturePath]);
@@ -124,14 +143,16 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     var orbitLength = lat_points.length;
 
     var last_llz = { latitude: lat_points.get(0), longitude: lon_points.get(0), altitude: 0 };
-    last_llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(0) : 10;
+    last_llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(0) : defaultPathAltitude;
 
     for (var i = 0; i < orbitLength; i++) {
-      var llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: 0 };
-      llz.altitude =
-        data.series.length >= 3 && data.series[2].fields[1].values.length > i
-          ? data.series[2].fields[1].values.get(i)
-          : 10;
+      var llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: defaultPathAltitude };
+      if (data.series.length >= 3) {
+        llz.altitude =
+          data.series[2].fields[1].values.length > i
+            ? data.series[2].fields[1].values.get(i)
+            : data.series[2].fields[1].values.get(0);
+      }
 
       const φ1 = (last_llz.latitude * Math.PI) / 180,
         φ2 = (llz.latitude * Math.PI) / 180,
@@ -173,27 +194,27 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   }, [data]);
 
   useEffect(() => {
-    if (threeJsObjects.current.pathGeometry !== null) {
-      const l = new THREE.Line(
-        threeJsObjects.current.pathGeometry,
-        new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
-      );
-      threeJsObjects.current.scene?.add(l);
-      threeJsObjects.current.pathLine = l;
-    }
-  }, [options.lineWidth]);
+    if (threeJsObjects.current.pathGeometry) {
+      // Remove old path mesh
+      const oldPathMesh = threeJsObjects.current.scene?.getObjectByName('path');
+      if (oldPathMesh !== undefined) {
+        threeJsObjects.current.scene?.remove(oldPathMesh);
+      }
 
-  useEffect(() => {
-    threeJsObjects.current.pathLine.geometry = threeJsObjects.current.pathGeometry;
-  }, [data]);
+      if (threeJsObjects.current.pathGeometry.vertices.length > 1) {
+        const l = new THREE.Line(
+          threeJsObjects.current.pathGeometry,
+          new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
+        );
+        l.name = 'path';
+        threeJsObjects.current.scene?.add(l);
+      }
+    }
+  }, [options.lineWidth, data]);
 
   useEffect(() => {
     loadNewTexture();
   }, [options.customTextureURL, loadNewTexture]);
-
-  useEffect(() => {
-    threeJsObjects.current.pathLine.material.linewidth = options.lineWidth;
-  }, [options.lineWidth, options]);
 
   // Camera configuration
   useEffect(() => {

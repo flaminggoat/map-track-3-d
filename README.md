@@ -1,6 +1,6 @@
 # MapTrack3D
 
-A plugin for Grafana that visualizes GPS points on a 3D globe
+A plugin for Grafana that visualizes GPS points on a 3D globe. A marker shows the position at the time when hovering over other panels on the dashboard.
 
 ![](src/img/screenshot.png)
 
