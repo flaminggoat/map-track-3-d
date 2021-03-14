@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 
-import { PanelProps } from '@grafana/data';
+import { PanelProps, DataFrame, LegacyGraphHoverEvent } from '@grafana/data';
 import { stylesFactory } from '@grafana/ui';
 import { SystemJS } from '@grafana/runtime';
 
 import { css, cx } from 'emotion';
-import { useRef, useEffect, useCallback } from 'react';
 
 import { MapTrack3DOptions } from 'types';
 
@@ -15,11 +14,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import earthTexture from './img/earth.jpg';
 import earthBumpMap from './img/earthBumpMap.jpg';
 
+const DEFAULT_ALT = 10;
+
 type TimeVec3 = { t: number; x: number; y: number; z: number };
+type TimeLLZ = { t: number; lat: number; lon: number; z: number };
 
 interface Props extends PanelProps<MapTrack3DOptions> {}
 interface ThreeJSObjectsI {
-  pathGeometry: THREE.Geometry | null;
+  pathGeometry: THREE.BufferGeometry | null;
   scene: THREE.Scene | null;
   camera: any;
   renderer: any;
@@ -40,8 +42,33 @@ function llToCart(lat: number, long: number, alt: number) {
   return cart;
 }
 
+function readTimePosData(series: DataFrame, options: MapTrack3DOptions): TimeLLZ[] {
+  const latitudeField = series.fields.find((field) => field.name === options.latitudeColumnName);
+  const longitudeField = series.fields.find((field) => field.name === options.longitudeColumnName);
+  const timeField = series.fields.find((field) => field.name === options.timeColumnName);
+  const altitudeField = series.fields.find((field) => field.name === options.altitudeColumnName);
+
+  if (!latitudeField || !longitudeField || !timeField) {
+    return [];
+  }
+
+  const len = Math.min(timeField.values.length, latitudeField.values.length, longitudeField.values.length);
+
+  var dataset: TimeLLZ[] = [];
+  for (var i = 0; i < len; i++) {
+    dataset.push({
+      t: timeField.values.get(i) as number,
+      lat: latitudeField.values.get(i),
+      lon: longitudeField.values.get(i),
+      z: !altitudeField || i >= altitudeField.values.length ? DEFAULT_ALT : altitudeField.values.get(i),
+    });
+  }
+
+  return dataset;
+}
+
 export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) => {
-  const render = function() {
+  const render = function () {
     if (threeJsObjects.current.renderer != null) {
       threeJsObjects.current.renderer.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
     }
@@ -70,7 +97,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   const earthRad = 6731000;
   const markerRad = 200000;
   const scale = 100000;
-  const defaultPathAltitude = 10;
 
   // Updates the position of the line marker that points to the center of the globe
   const updateLineMarker = (scene: THREE.Scene, point: TimeVec3) => {
@@ -78,21 +104,21 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     if (lineMarker !== undefined) {
       scene.remove(lineMarker);
     }
-    const l = new THREE.Geometry();
-    l.vertices.push(new THREE.Vector3(0, 0, 0));
-    l.vertices.push(new THREE.Vector3(point.x, point.y, point.z));
-    const newLineMarker = new THREE.Line(
-      l,
-      new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: options.lineWidth })
-    );
+    const points = [];
+    points.push(new THREE.Vector3(0, 0, 0));
+    points.push(new THREE.Vector3(point.x, point.y, point.z));
+    const l = new THREE.BufferGeometry().setFromPoints(points);
+    const newLineMarker = new THREE.Line(l, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 }));
     newLineMarker.name = 'lineMarker';
     scene.add(newLineMarker);
   };
 
-  // Show marker on the panel when user hovers over other graphs
   SystemJS.load('app/core/app_events').then((appEvents: any) => {
-    appEvents.on('graph-hover', (e: any) => {
-      threeJsObjects.current.cartPath?.find(point => {
+    console.log(appEvents);
+    appEvents.subscribe(LegacyGraphHoverEvent, (ev: LegacyGraphHoverEvent) => {
+      console.log(ev);
+      const e = ev.payload;
+      threeJsObjects.current.cartPath?.find((point) => {
         if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
           if (threeJsObjects.current.scene) {
             updateLineMarker(threeJsObjects.current.scene, point);
@@ -127,41 +153,34 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
   }, []);
 
   useEffect(() => {
-    //Add orbit path
-    var orbit = new THREE.Geometry();
-    threeJsObjects.current.pathGeometry = orbit;
+    var orbit: THREE.Vector3[] = [];
     threeJsObjects.current.cartPath = [];
+    threeJsObjects.current.pathGeometry = new THREE.BufferGeometry();
 
-    if (data.series.length < 2) {
+    if (data.series.length < 1) {
+      console.log('No data series provided');
       return;
     }
 
-    const lat_points = data.series[0].fields[1].values;
-    const lon_points = data.series[1].fields[1].values;
-    const timestamps = data.series[0].fields[0].values;
+    const llzArray = readTimePosData(data.series[0], options);
+    if (llzArray.length === 0) {
+      console.log('Data series length is 0');
+      return;
+    }
 
-    var orbitLength = lat_points.length;
+    var last_llz = llzArray[0];
 
-    var last_llz = { latitude: lat_points.get(0), longitude: lon_points.get(0), altitude: 0 };
-    last_llz.altitude = data.series.length >= 3 ? data.series[2].fields[1].values.get(0) : defaultPathAltitude;
+    for (var i = 0; i < llzArray.length; i++) {
+      var llz = llzArray[i];
 
-    for (var i = 0; i < orbitLength; i++) {
-      var llz = { latitude: lat_points.get(i), longitude: lon_points.get(i), altitude: defaultPathAltitude };
-      if (data.series.length >= 3) {
-        llz.altitude =
-          data.series[2].fields[1].values.length > i
-            ? data.series[2].fields[1].values.get(i)
-            : data.series[2].fields[1].values.get(0);
-      }
-
-      const φ1 = (last_llz.latitude * Math.PI) / 180,
-        φ2 = (llz.latitude * Math.PI) / 180,
-        Δλ = ((llz.longitude - last_llz.longitude) * Math.PI) / 180;
+      const φ1 = (last_llz.lat * Math.PI) / 180,
+        φ2 = (llz.lat * Math.PI) / 180,
+        Δλ = ((llz.lon - last_llz.lon) * Math.PI) / 180;
       const d = Math.acos(Math.sin(φ1) * Math.sin(φ2) + Math.cos(φ1) * Math.cos(φ2) * Math.cos(Δλ)) * earthRad;
 
       if (d > 100000) {
-        const λ1 = (last_llz.longitude * Math.PI) / 180;
-        const λ2 = (llz.longitude * Math.PI) / 180;
+        const λ1 = (last_llz.lon * Math.PI) / 180;
+        const λ2 = (llz.lon * Math.PI) / 180;
 
         var k = Math.floor(Math.abs(d / 100000));
         for (var j = 0; j < k; ++j) {
@@ -176,41 +195,45 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
           const λi = Math.atan2(y, x);
 
           var llzinterp = {
-            latitude: φi / (Math.PI / 180),
-            longitude: λi / (Math.PI / 180),
-            altitude: last_llz.altitude + ((llz.altitude - last_llz.altitude) / (k + 1)) * (j + 1),
+            lat: φi / (Math.PI / 180),
+            lon: λi / (Math.PI / 180),
+            z: last_llz.z + ((llz.z - last_llz.z) / (k + 1)) * (j + 1),
           };
-          llzinterp.altitude = earthRad / scale + llzinterp.altitude / scale;
-          var carti = llToCart(llzinterp.latitude, llzinterp.longitude, llzinterp.altitude);
-          orbit.vertices.push(new THREE.Vector3(carti.x, carti.y, carti.z));
+          llzinterp.z = earthRad / scale + llzinterp.z / scale;
+          var carti = llToCart(llzinterp.lat, llzinterp.lon, llzinterp.z);
+          orbit.push(new THREE.Vector3(carti.x, carti.y, carti.z));
         }
       }
       last_llz = { ...llz };
-      llz.altitude = earthRad / scale + llz.altitude / scale;
-      var cart = llToCart(llz.latitude, llz.longitude, llz.altitude);
-      threeJsObjects.current.cartPath.push({ t: timestamps.get(i) as number, ...cart });
-      orbit.vertices.push(new THREE.Vector3(cart.x, cart.y, cart.z));
+      llz.z = earthRad / scale + llz.z / scale;
+      var cart = llToCart(llz.lat, llz.lon, llz.z);
+      threeJsObjects.current.cartPath.push({ t: llz.t, ...cart });
+      orbit.push(new THREE.Vector3(cart.x, cart.y, cart.z));
     }
-  }, [data]);
+
+    if (threeJsObjects.current.pathGeometry) {
+      threeJsObjects.current.pathGeometry.setFromPoints(orbit);
+    }
+  }, [data, options]);
 
   useEffect(() => {
     if (threeJsObjects.current.pathGeometry) {
       // Remove old path mesh
       const oldPathMesh = threeJsObjects.current.scene?.getObjectByName('path');
       if (oldPathMesh !== undefined) {
+        console.log('removing old line');
         threeJsObjects.current.scene?.remove(oldPathMesh);
       }
 
-      if (threeJsObjects.current.pathGeometry.vertices.length > 1) {
-        const l = new THREE.Line(
-          threeJsObjects.current.pathGeometry,
-          new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: options.lineWidth })
-        );
-        l.name = 'path';
-        threeJsObjects.current.scene?.add(l);
-      }
+      console.log('generating new line');
+      const l = new THREE.Line(
+        threeJsObjects.current.pathGeometry,
+        new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 1 })
+      );
+      l.name = 'path';
+      threeJsObjects.current.scene?.add(l);
     }
-  }, [options.lineWidth, data]);
+  }, [data]);
 
   useEffect(() => {
     loadNewTexture();
