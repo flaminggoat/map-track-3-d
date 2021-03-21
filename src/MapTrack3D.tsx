@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react';
 
 import { PanelProps, DataFrame, LegacyGraphHoverEvent } from '@grafana/data';
 import { stylesFactory } from '@grafana/ui';
-import { SystemJS } from '@grafana/runtime';
+// import { SystemJS } from '@grafana/runtime';
 
 import { css, cx } from 'emotion';
 
@@ -67,7 +67,7 @@ function readTimePosData(series: DataFrame, options: MapTrack3DOptions): TimeLLZ
   return dataset;
 }
 
-export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) => {
+export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, eventBus }) => {
   const render = function () {
     if (threeJsObjects.current.renderer != null) {
       threeJsObjects.current.renderer.render(threeJsObjects.current.scene, threeJsObjects.current.camera);
@@ -113,24 +113,21 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height }) =>
     scene.add(newLineMarker);
   };
 
-  SystemJS.load('app/core/app_events').then((appEvents: any) => {
-    console.log(appEvents);
-    appEvents.subscribe(LegacyGraphHoverEvent, (ev: LegacyGraphHoverEvent) => {
-      console.log(ev);
-      const e = ev.payload;
-      threeJsObjects.current.cartPath?.find((point) => {
-        if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
-          if (threeJsObjects.current.scene) {
-            updateLineMarker(threeJsObjects.current.scene, point);
-          }
-          threeJsObjects.current.markerMesh.position.x = point.x;
-          threeJsObjects.current.markerMesh.position.y = point.y;
-          threeJsObjects.current.markerMesh.position.z = point.z;
-          render();
-          return true;
+  eventBus.subscribe(LegacyGraphHoverEvent, (ev: LegacyGraphHoverEvent) => {
+    console.log(ev);
+    const e = ev.payload;
+    threeJsObjects.current.cartPath?.find((point) => {
+      if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
+        if (threeJsObjects.current.scene) {
+          updateLineMarker(threeJsObjects.current.scene, point);
         }
-        return false;
-      });
+        threeJsObjects.current.markerMesh.position.x = point.x;
+        threeJsObjects.current.markerMesh.position.y = point.y;
+        threeJsObjects.current.markerMesh.position.z = point.z;
+        render();
+        return true;
+      }
+      return false;
     });
   });
 
