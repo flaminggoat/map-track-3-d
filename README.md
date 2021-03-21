@@ -9,7 +9,7 @@ A plugin for Grafana that visualizes GPS points on a 3D globe. A marker shows th
 The plugin requires latitude,longitude, and optionally altitude measurements provided as floats in two/three separate fields
 formatted by Grafana as a "Time series".
 
-It can be used with MySQL/MariaDB as a data source by using 2/3 queries along the lines of:
+It can be used with MySQL/MariaDB as a data source by using a querie along the lines of:
 
 ```
 SELECT
@@ -22,7 +22,7 @@ WHERE $__timeFilter(timestamp)
 ORDER BY timestamp ASC
 ```
 
-A demo CSV file that can be used in conjunction with [CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/) is provided at [here](https://raw.githubusercontent.com/flaminggoat/map-track-3-d/master/testdata/iss.csv)
+A demo CSV file that can be used in conjunction with [CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/) is provided [here](https://raw.githubusercontent.com/flaminggoat/map-track-3-d/master/testdata/iss.csv)
 
 ![](src/img/screenshot_csv.png)
 
