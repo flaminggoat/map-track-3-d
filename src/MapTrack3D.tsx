@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useCallback } from 'react';
 
 import { PanelProps, DataFrame, LegacyGraphHoverEvent } from '@grafana/data';
 import { stylesFactory } from '@grafana/ui';
-// import { SystemJS } from '@grafana/runtime';
 
 import { css, cx } from 'emotion';
 
@@ -25,6 +24,7 @@ interface ThreeJSObjectsI {
   scene: THREE.Scene | null;
   camera: any;
   renderer: any;
+  controls: OrbitControls | null;
   animationRequestId: any;
   earthMaterial: THREE.MeshBasicMaterial | THREE.MeshPhysicalMaterial;
   earthMesh: THREE.Mesh | null;
@@ -82,6 +82,7 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
     scene: null,
     camera: null,
     renderer: null,
+    controls: null,
     animationRequestId: null,
     earthMaterial: new THREE.MeshPhysicalMaterial({
       bumpMap: new THREE.TextureLoader().load(earthBumpMap, render),
@@ -114,7 +115,6 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
   };
 
   eventBus.subscribe(LegacyGraphHoverEvent, (ev: LegacyGraphHoverEvent) => {
-    console.log(ev);
     const e = ev.payload;
     threeJsObjects.current.cartPath?.find((point) => {
       if (point.t >= e.pos.x && threeJsObjects.current.markerMesh !== null) {
@@ -256,9 +256,17 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
     r.setClearColor(0x000000, 0);
     const controls = new OrbitControls(threeJsObjects.current.camera, r.domElement);
     threeJsObjects.current.renderer = r;
+    threeJsObjects.current.controls = controls;
     controls.addEventListener('change', render);
     render();
   }, []);
+
+  // Rotate Speed Configuration
+  useEffect(() => {
+    if (threeJsObjects.current.controls) {
+      threeJsObjects.current.controls.rotateSpeed = options.rotateSpeed;
+    }
+  }, [options.rotateSpeed]);
 
   // Window resize handling
   useEffect(() => {
