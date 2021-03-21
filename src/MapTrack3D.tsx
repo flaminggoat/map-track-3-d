@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 
-import { PanelProps, DataFrame, LegacyGraphHoverEvent } from '@grafana/data';
+import { PanelProps, DataFrame, LegacyGraphHoverEvent, LegacyGraphHoverClearEvent } from '@grafana/data';
 import { stylesFactory } from '@grafana/ui';
 
 import { css, cx } from 'emotion';
@@ -131,6 +131,16 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
     });
   });
 
+  eventBus.subscribe(LegacyGraphHoverClearEvent, (ev: LegacyGraphHoverClearEvent) => {
+    if (threeJsObjects.current.scene && threeJsObjects.current.markerMesh) {
+      updateLineMarker(threeJsObjects.current.scene, { t: 0, x: 0, y: 0, z: 0 });
+      threeJsObjects.current.markerMesh.position.x = 0;
+      threeJsObjects.current.markerMesh.position.y = 0;
+      threeJsObjects.current.markerMesh.position.z = 0;
+      render();
+    }
+  });
+
   const loadNewTexture = useCallback(() => {
     const texture = new THREE.TextureLoader().load(texturePath, render);
     threeJsObjects.current.earthMaterial.map = texture;
@@ -218,11 +228,11 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
       // Remove old path mesh
       const oldPathMesh = threeJsObjects.current.scene?.getObjectByName('path');
       if (oldPathMesh !== undefined) {
-        console.log('removing old line');
+        // console.log('removing old line');
         threeJsObjects.current.scene?.remove(oldPathMesh);
       }
 
-      console.log('generating new line');
+      // console.log('generating new line');
       const l = new THREE.Line(
         threeJsObjects.current.pathGeometry,
         new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 1 })

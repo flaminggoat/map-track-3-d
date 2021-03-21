@@ -10,11 +10,21 @@ The plugin requires latitude,longitude, and optionally altitude measurements pro
 formatted by Grafana as a "Time series".
 
 It can be used with MySQL/MariaDB as a data source by using 2/3 queries along the lines of:
+
 ```
-A: SELECT "latitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
-B: SELECT "longitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
-B: SELECT "altitude" as value, $__time(timestamp) FROM "location" WHERE $__timeFilter(timestamp) ORDER BY timestamp ASC
+SELECT
+    "timestamp" as time,
+    lat,
+    lon,
+    alt,
+FROM test_data
+WHERE $__timeFilter(timestamp)
+ORDER BY timestamp ASC
 ```
+
+A demo CSV file that can be used in conjunction with [CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/) is provided at [here](https://raw.githubusercontent.com/flaminggoat/map-track-3-d/master/testdata/iss.csv)
+
+![](src/img/screenshot_csv.png)
 
 ## How to develop
 If you don’t want to install Grafana on your local machine, you can use Docker.
@@ -22,7 +32,7 @@ If you don’t want to install Grafana on your local machine, you can use Docker
 To set up Grafana for plugin development using Docker, run the following command:
 
 ```
-docker run -d -p 3000:3000 -v "$(pwd)"/dist:/var/lib/grafana/plugins --name=grafana grafana/grafana:7.0.0
+docker run -d -p 3000:3000 -v "$(pwd)"/dist:/var/lib/grafana/plugins --name=grafana grafana/grafana:7.4.3
 ```
 
 Since Grafana only loads plugins on start-up, you need to restart the container whenever you add or remove a plugin.
