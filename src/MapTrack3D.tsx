@@ -154,6 +154,8 @@ export const MapTrack3D: React.FC<Props> = ({ options, data, width, height, even
     c.add(marker);
     c.add(globe);
 
+    globe.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI);
+
     threeJsObjects.current.earthMesh = globe;
     threeJsObjects.current.scene = c;
     threeJsObjects.current.markerMesh = marker;
